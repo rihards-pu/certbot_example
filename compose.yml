@@ -1,0 +1,26 @@
+services:
+  webserver:
+    image: "traefik/whoami"
+    container_name: "webserver"
+    ports:
+      - "8080:80"
+  proxy:
+    image: "nginx:alpine"
+    container_name: "proxy"
+    depends_on: 
+      - "certbot"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx_templates/nginx.conf.template:/etc/nginx/templates/${DOMAIN}.conf.template
+      - ./config/ssl/:/etc/nginx/ssl:ro
+    environment:
+      DOMAIN: ${DOMAIN}
+  certbot:  
+    build: .
+    container_name: "certbot"
+    volumes:
+      - ./config/certbot:/certbot
+      - ./config/ssl:/etc/letsencrypt/
+    command: ["sh","-c","certbot certonly --non-interactive --agree-tos --no-eff-email --email ${EMAIL} --dns-google --dns-google-credentials /certbot/google.json --domains ${DOMAIN} --cert-name ${DOMAIN}"]
